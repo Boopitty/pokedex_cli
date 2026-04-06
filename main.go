@@ -4,11 +4,23 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
+	"time"
+
+	"github.com/Boopitty/pokedex_cli/internal/pokecache"
 )
 
+type config struct {
+	Next     string
+	Previous string
+	cache    *pokecache.Cache
+}
+
 func main() {
+	// Create a scanner to read user input from the command line
 	scanner := bufio.NewScanner(os.Stdin)
 
+	// Define the CLI commands and their descriptions
 	var cliCommands = map[string]cliCommand{
 		"exit": {
 			name:        "exit",
@@ -39,6 +51,7 @@ func main() {
 	log := &config{
 		Next:     "https://pokeapi.co/api/v2/location-area",
 		Previous: "",
+		cache:    pokecache.NewCache(60 * time.Second), // Create a ne with a 5-second reaping interval := pokecache.NewCache(5 * time.Second)
 	}
 
 	// REPL loop (Read-Eval-Print Loop)
@@ -88,4 +101,17 @@ func main() {
 			fmt.Printf("Unknown command\n")
 		}
 	}
+}
+
+func cleanInput(text string) []string {
+	// Split the input into words slice and trim whitespace
+	// Convert the input to lowercase
+	words := strings.Fields(strings.ToLower(text))
+	if len(words) == 0 {
+		return []string{}
+	}
+	for i, word := range words {
+		words[i] = strings.TrimSpace(word)
+	}
+	return words
 }
