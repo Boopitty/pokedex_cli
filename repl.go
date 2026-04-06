@@ -8,10 +8,13 @@ import (
 	"os"
 )
 
+// REPL (Read-Eval-Print Loop) for the Pokedex CLI application.
+// This File contains the functions that the main REPL loop will call when the user enters a command.
+
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, ...string) error
 }
 
 // areaResponse struct to match the JSON response from the API
@@ -25,16 +28,26 @@ type areaResponse struct {
 	} `json:"results"`
 }
 
-// Print a goodbye message and exit the program
-func commandExit(cfg *config) error {
+// Partial struct to match needed info from the "explore" API response
+type areaPokemon struct {
+	Pokemon_encounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
+}
+
+// commandExit prints a goodbye message and exits the program.
+func commandExit(cfg *config, args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
 // makeHelpCommand returns a function that prints the help message when called.
-func makeHelpCommand(commands map[string]cliCommand) func(*config) error {
-	return func(cfg *config) error {
+func makeHelpCommand(commands map[string]cliCommand) func(*config, ...string) error {
+	return func(cfg *config, args ...string) error {
 		fmt.Println("Welcome to the Pokedex!")
 		fmt.Print("Usage:\n\n")
 
@@ -46,7 +59,7 @@ func makeHelpCommand(commands map[string]cliCommand) func(*config) error {
 }
 
 // Fetch and print area data from the API, update the config with the next and previous URLs.
-func commandMap(cfg *config) error {
+func commandMap(cfg *config, args ...string) error {
 	// Get url from config and check if it's in the cache
 	url := cfg.Next
 	data, ok := cfg.cache.Get(url)
@@ -95,7 +108,7 @@ func commandMap(cfg *config) error {
 }
 
 // Fetch and print previous area data from the API, update the config with the next and previous URLs.
-func commandMapBack(cfg *config) error {
+func commandMapBack(cfg *config, args ...string) error {
 	url := cfg.Previous
 	data, ok := cfg.cache.Get(url)
 	var areas areaResponse
@@ -134,5 +147,48 @@ func commandMapBack(cfg *config) error {
 		fmt.Println("- ", area.Name)
 	}
 
+	return nil
+}
+
+// Takes a the name of an area and prints out the pokemon that can be found in that area.
+func explore(cfg *config, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("no area name provided")
+	}
+	areaName := args[0]
+	url := "https://pokeapi.co/api/v2/location-area/" + areaName
+	data, ok := cfg.cache.Get(url)
+
+	// if url not in cache, fetch and read from the API
+	if !ok {
+		fmt.Printf("Fetching data for area '%s' from the API...\n", areaName)
+
+		res, err := http.Get(url)
+		if err != nil {
+			return fmt.Errorf("failed to fetch area data: %v", err)
+		}
+		defer res.Body.Close()
+
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read area data: %v", err)
+		}
+	} else {
+		fmt.Printf("Data for area '%s' found in cache, using cached data...\n", areaName)
+	}
+
+	var areaData areaPokemon
+	err := json.Unmarshal(data, &areaData)
+	if err != nil {
+		return fmt.Errorf("failed to decode area data: %v", err)
+	}
+
+	cfg.cache.Add(url, data)
+
+	fmt.Printf("Exploring '%s'...\n", areaName)
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range areaData.Pokemon_encounters {
+		fmt.Println("- ", encounter.Pokemon.Name)
+	}
 	return nil
 }

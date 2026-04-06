@@ -37,6 +37,11 @@ func main() {
 			description: "Display previous area names",
 			callback:    commandMapBack,
 		},
+		"explore": {
+			name:        "explore <area_name>",
+			description: "Explore an area to see which pokemon can be found there",
+			callback:    explore,
+		},
 	}
 
 	// Add the help command to the cliCommands map
@@ -94,6 +99,12 @@ func main() {
 
 		case "mapb":
 			err := cliCommands["mapb"].callback(log)
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+			}
+
+		case "explore":
+			err := cliCommands["explore"].callback(log, cleanedInput[1:]...)
 			if err != nil {
 				fmt.Printf("Error executing command: %v\n", err)
 			}
