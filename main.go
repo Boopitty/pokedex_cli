@@ -14,11 +14,20 @@ type config struct {
 	Next     string
 	Previous string
 	cache    *pokecache.Cache
+	pokedex  map[string]pokemonData
 }
 
 func main() {
 	// Create a scanner to read user input from the command line
 	scanner := bufio.NewScanner(os.Stdin)
+
+	// Initialize the config struct with the initial API endpoint
+	log := &config{
+		Next:     "https://pokeapi.co/api/v2/location-area",
+		Previous: "",
+		cache:    pokecache.NewCache(60 * time.Second), // Create a ne with a 5-second reaping interval := pokecache.NewCache(5 * time.Second)
+		pokedex:  make(map[string]pokemonData),
+	}
 
 	// Define the CLI commands and their descriptions
 	var cliCommands = map[string]cliCommand{
@@ -42,6 +51,11 @@ func main() {
 			description: "Explore an area to see which pokemon can be found there",
 			callback:    explore,
 		},
+		"catch": {
+			name:        "catch <pokemon_name>",
+			description: "Catch a pokemon to see its base experience",
+			callback:    catch,
+		},
 	}
 
 	// Add the help command to the cliCommands map
@@ -50,13 +64,6 @@ func main() {
 		name:        "help",
 		description: "Displayes a help message",
 		callback:    makeHelpCommand(cliCommands),
-	}
-
-	// Initialize the config struct with the initial API endpoint
-	log := &config{
-		Next:     "https://pokeapi.co/api/v2/location-area",
-		Previous: "",
-		cache:    pokecache.NewCache(60 * time.Second), // Create a ne with a 5-second reaping interval := pokecache.NewCache(5 * time.Second)
 	}
 
 	// REPL loop (Read-Eval-Print Loop)
@@ -105,6 +112,11 @@ func main() {
 
 		case "explore":
 			err := cliCommands["explore"].callback(log, cleanedInput[1:]...)
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+			}
+		case "catch":
+			err := cliCommands["catch"].callback(log, cleanedInput[1:]...)
 			if err != nil {
 				fmt.Printf("Error executing command: %v\n", err)
 			}

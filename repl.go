@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 )
@@ -36,6 +37,12 @@ type areaPokemon struct {
 			URL  string `json:"url"`
 		} `json:"pokemon"`
 	} `json:"pokemon_encounters"`
+}
+
+type pokemonData struct {
+	Name    string `json:"name"`
+	URL     string `json:"url"`
+	BaseExp int    `json:"base_experience"`
 }
 
 // commandExit prints a goodbye message and exits the program.
@@ -190,5 +197,52 @@ func explore(cfg *config, args ...string) error {
 	for _, encounter := range areaData.Pokemon_encounters {
 		fmt.Println("- ", encounter.Pokemon.Name)
 	}
+	return nil
+}
+
+// Takes a pokemon's name and attempts to catch it.
+func catch(cfg *config, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("no pokemon name provided")
+	}
+	// Get proper URL and get response
+	pokemon := args[0]
+	url := "https://pokeapi.co/api/v2/pokemon/" + pokemon
+	data, ok := cfg.cache.Get(url)
+
+	if !ok {
+		fmt.Printf("Fetching data for pokemon '%s' from the API...\n", pokemon)
+		res, err := http.Get(url)
+		if err != nil {
+			return fmt.Errorf("failed to fetch pokemon data: %v", err)
+		}
+		defer res.Body.Close()
+
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read pokemon data: %v", err)
+		}
+	} else {
+		fmt.Printf("Data for pokemon '%s' found in cache, using cached data...\n", pokemon)
+	}
+
+	var pokemonData pokemonData
+	err := json.Unmarshal(data, &pokemonData)
+	if err != nil {
+		return fmt.Errorf("failed to decode pokemon data: %v", err)
+	}
+
+	cfg.cache.Add(url, data)
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonData.Name)
+
+	chance := pokemonData.BaseExp * rand.Intn(100) / 100
+	if chance < 50 {
+		fmt.Printf("Congratulations! You caught %s!\n", pokemonData.Name)
+		cfg.pokedex[pokemonData.Name] = pokemonData
+	} else {
+		fmt.Printf("Oh no! %s escaped!\n", pokemonData.Name)
+	}
+
 	return nil
 }
