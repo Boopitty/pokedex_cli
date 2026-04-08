@@ -74,7 +74,7 @@ func makeHelpCommand(commands map[string]cliCommand) func(*config, ...string) er
 		fmt.Print("Usage:\n\n")
 
 		for _, cmd := range commands {
-			fmt.Printf("%s: %s\n", cmd.name, cmd.description)
+			fmt.Printf("%s:\n - %s\n", cmd.name, cmd.description)
 		}
 		return nil
 	}
@@ -291,5 +291,14 @@ func inspect(cfg *config, args ...string) error {
 }
 
 func pokedex(cfg *config, args ...string) error {
+	if len(cfg.pokedex) == 0 {
+		fmt.Println("Your pokedex is empty! Catch some pokemon to see them here.")
+		return nil
+	}
+
+	fmt.Println("Your Pokedex:")
+	for name := range cfg.pokedex {
+		fmt.Printf("	- %s\n", name)
+	}
 	return nil
 }
