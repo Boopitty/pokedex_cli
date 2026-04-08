@@ -1,17 +1,9 @@
-## Terminal Instructions
+# Pokedex
 
-Run test file:
-go test ./...
+This is a boot.dev guided project.
+It can display information of different areas in the pokemon world, and catch them for your pokedex!
 
-Compile: 
-go build
+You can type 'help' in the terminal to see the possible commands.
 
-Run Program:
-./pokedex_cli
-go run .
-
-Store output in repl.log file:
-go run . | tee repl.log 
-
-Quit:
-ctrl + C
+##
+This project had me use PokeApi.co retrieve the needed information on the locations and pokemon.
