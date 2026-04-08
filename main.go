@@ -56,6 +56,16 @@ func main() {
 			description: "Catch a pokemon to see its base experience",
 			callback:    catch,
 		},
+		"inspect": {
+			name:        "inspect <pokemon_name>",
+			description: "Inspect a pokemon to see its details",
+			callback:    inspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Display all caught pokemon",
+			callback:    pokedex,
+		},
 	}
 
 	// Add the help command to the cliCommands map
@@ -117,6 +127,16 @@ func main() {
 			}
 		case "catch":
 			err := cliCommands["catch"].callback(log, cleanedInput[1:]...)
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+			}
+		case "inspect":
+			err := cliCommands["inspect"].callback(log, cleanedInput[1:]...)
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+			}
+		case "pokedex":
+			err := cliCommands["pokedex"].callback(log)
 			if err != nil {
 				fmt.Printf("Error executing command: %v\n", err)
 			}

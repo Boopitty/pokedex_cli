@@ -20,13 +20,13 @@ type cliCommand struct {
 
 // areaResponse struct to match the JSON response from the API
 type areaResponse struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
-	Results  []struct {
+	Results []struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"results"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Count    int    `json:"count"`
 }
 
 // Partial struct to match needed info from the "explore" API response
@@ -40,9 +40,24 @@ type areaPokemon struct {
 }
 
 type pokemonData struct {
+	Stats []struct {
+		BaseStat int `json:"base_stat"`
+		Stat     struct {
+			Name string `json:"name"`
+		} `json:"stat"`
+	} `json:"stats"`
+
+	Types []struct {
+		Type struct {
+			Name string `json:"name"`
+		} `json:"type"`
+	} `json:"types"`
+
 	Name    string `json:"name"`
 	URL     string `json:"url"`
 	BaseExp int    `json:"base_experience"`
+	Height  int    `json:"height"`
+	Weight  int    `json:"weight"`
 }
 
 // commandExit prints a goodbye message and exits the program.
@@ -244,5 +259,37 @@ func catch(cfg *config, args ...string) error {
 		fmt.Printf("Oh no! %s escaped!\n", pokemonData.Name)
 	}
 
+	return nil
+}
+
+func inspect(cfg *config, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("no pokemon name provided")
+	}
+
+	// Check if the pokemon is in the pokedex
+	name := args[0]
+	pokemon, ok := cfg.pokedex[name]
+	if !ok {
+		return fmt.Errorf("you haven't caught %s yet!", name)
+	}
+
+	// Print the pokemon's details
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Printf("Base Experience: %d\n", pokemon.BaseExp)
+	fmt.Println("Stats:")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf("	- %s: %d\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, t := range pokemon.Types {
+		fmt.Printf("	- %s\n", t.Type.Name)
+	}
+	return nil
+}
+
+func pokedex(cfg *config, args ...string) error {
 	return nil
 }
